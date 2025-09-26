@@ -21,9 +21,10 @@ model users {
   isActive   Int      @default(0)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  refresh_token String?  @db.VarChar(255)
+  refresh_token String?  @db.Text
   token_expiry DateTime?
   reset_otp String?  @db.VarChar(255)
   otp_expiry DateTime? 
 
+  @@index([refresh_token])
 }

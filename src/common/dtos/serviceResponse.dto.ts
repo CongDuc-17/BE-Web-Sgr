@@ -19,10 +19,12 @@ export class ServiceResponse<T = null> {
   }
 }
 
-export const ServiceResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T | null) =>
+export const ServiceResponseSchema = <T extends z.ZodTypeAny>(
+  dataSchema: T | null
+) =>
   z.object({
     success: z.boolean(),
     message: z.string(),
-    sumary: dataSchema ? dataSchema.optional() : z.null(),
+    data: dataSchema ? dataSchema.optional() : z.null(),
     code: z.number(),
   });

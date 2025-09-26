@@ -9,19 +9,26 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      callbackURL: "http://localhost:3000/auth/google/login",
+      callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        const email = profile.emails?.[0].value;
+        if (!email) {
+          return done(
+            new Error("Google profile did not supply an email"),
+            undefined
+          );
+        }
         let user = await prisma.users.findUnique({
-          where: { email: profile.emails?.[0].value },
+          where: { email },
         });
         if (!user) {
           user = await prisma.users.create({
             data: {
               provider: "google",
               providerId: profile.id,
-              email: String(profile.emails?.[0].value!),
+              email,
               name: String(profile.displayName),
             },
           });

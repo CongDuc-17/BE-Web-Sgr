@@ -15,9 +15,14 @@ const app: Express = express();
 app.use(express.json());
 app.use(cookieParser());
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+  throw new Error("SESSION_SECRET environment variable must be set");
+}
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
+    secret: sessionSecret || "your_secret_key",
     resave: false,
     saveUninitialized: false,
   })
@@ -38,9 +43,15 @@ app.use("/health-check", Modules.healthCheckRouter);
 app.use("/auth", Modules.authRoute);
 
 app.use(openAPIRouter);
-connectionDB();
 
-app.listen(appEnv.PORT, () => {
-  const { NODE_ENV, HOST, PORT } = appEnv;
-  console.log(`Server (${NODE_ENV}) running on port http://${HOST}:${PORT}`);
+const bootstrap = async () => {
+  await connectionDB();
+  app.listen(appEnv.PORT, () => {
+    const { NODE_ENV, HOST, PORT } = appEnv;
+    console.log(`Server (${NODE_ENV}) running on port http://${HOST}:${PORT}`);
+  });
+};
+bootstrap().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
 });

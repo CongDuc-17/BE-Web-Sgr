@@ -4,6 +4,7 @@ import { z } from "zod";
 import AuthController from "./auth.controller.js";
 import { createApiResponse } from "../../swagger/openAPIResponseBuilders.js";
 import passport from "@/configs/passport.config.js";
+import { validateBody } from "../../helper/index.js";
 
 export const authRegistry = new OpenAPIRegistry();
 
@@ -22,7 +23,8 @@ const UserLoginSchema = z.object({
 });
 
 const AuthResponseSchema = z.object({
-  token: z.string(),
+  accessToken: z.string(),
+  refreshToken: z.string().optional(),
   user: z.object({
     id: z.string(),
     email: z.string(),
@@ -113,9 +115,9 @@ authRegistry.registerPath({
   },
   responses: createApiResponse(
     z.object({
-      resetToken: z.string(),
+      message: z.string(),
     }),
-    "Password reset token sent"
+    "If the email exists, a password reset link was sent"
   ),
 });
 
@@ -189,16 +191,43 @@ authRegistry.registerPath({
   ),
 });
 
-authRoute.post("/register", AuthController.register);
-authRoute.post("/verify-otp", AuthController.verifyOTP);
-authRoute.post("/login", AuthController.login);
+authRoute.post(
+  "/register",
+  validateBody(UserRegisterSchema),
+  AuthController.register
+);
+
+authRoute.post(
+  "/verify-otp",
+  validateBody(
+    z.object({ email: z.string().email(), otp: z.string().length(6) })
+  ),
+  AuthController.verifyOTP
+);
+
+authRoute.post("/login", validateBody(UserLoginSchema), AuthController.login);
+
 authRoute.post("/refresh-token", AuthController.refreshToken);
-authRoute.post("/forgot-password", AuthController.forgotPassword);
-authRoute.post("/reset-password", AuthController.resetPassword);
+
+authRoute.post(
+  "/forgot-password",
+  validateBody(z.object({ email: z.string().email() })),
+  AuthController.forgotPassword
+);
+
+authRoute.post(
+  "/reset-password",
+  validateBody(
+    z.object({ resetToken: z.string(), newPassword: z.string().min(6) })
+  ),
+  AuthController.resetPassword
+);
+
 authRoute.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
+
 authRoute.get(
   "/google/login",
   passport.authenticate("google", { failureRedirect: "/" }),

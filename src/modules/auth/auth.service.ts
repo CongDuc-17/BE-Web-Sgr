@@ -67,7 +67,10 @@ class AuthService {
         data: { reset_otp: null, otp_expiry: null, isActive: 1 },
       });
       return true;
-    } catch (error: any) {}
+    } catch (error: any) {
+      console.error("Error in service verifyOTP:", error.message);
+      throw error;
+    }
   }
 
   async login(email: string, password: string) {
@@ -152,9 +155,12 @@ class AuthService {
         where: { reset_otp: OTP },
       });
       if (!user) throw new Error("Invalid reset token");
+      if (!user.otp_expiry || user.otp_expiry < new Date()) {
+        throw new Error("Reset token expired");
+      }
       await prisma.users.update({
         where: { id: user.id },
-        data: { password: hashed, reset_otp: null },
+        data: { password: hashed, reset_otp: null, otp_expiry: null },
       });
     } catch (error: any) {
       console.error("Error in service resetPassword:", error.message);

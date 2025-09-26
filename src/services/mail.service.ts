@@ -16,21 +16,17 @@ export const mailService = {
   async sendMail(emailTo: string, subject: string, text: string) {
     const transporter = nodemailer.createTransport(mailConfig);
 
-    transporter.sendMail(
-      {
+    try {
+      const info = await transporter.sendMail({
         from: process.env.SMTP_USER,
         to: emailTo,
         subject,
         text,
-      },
-      (err, info) => {
-        if (err) {
-          console.log(err);
-          throw new Error("Error");
-        } else {
-          console.log(info);
-        }
-      }
-    );
+      });
+      console.log(info);
+    } catch (err) {
+      console.error("Failed to send mail", err);
+      throw new Error("Failed to send mail");
+    }
   },
 };
